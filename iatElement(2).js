@@ -141,6 +141,8 @@ class QualtricsIAT extends HTMLElement {
 	}
  
 	connectedCallback() {
+		if (this._setupComplete) return;
+		this._setupComplete = true;
 		this.iatId = this.getAttribute('iat-id');
 		this.questionName = this.getAttribute('question-name');
 		this.pathRoot = this.getAttribute('path-root') || '';
@@ -161,7 +163,7 @@ class QualtricsIAT extends HTMLElement {
 			if (this.question) {
 				this.question.hideNextButton();
 			}
-			const self = this; setTimeout(function() { self.finishSetup(); }, 0);
+			this.finishSetup();
 			return;
 		}
  
@@ -179,7 +181,7 @@ class QualtricsIAT extends HTMLElement {
 				}
 				this.task = task;
  
-				const self = this; setTimeout(function() { self.finishSetup(); }, 0);
+				this.finishSetup();
 			});
 		});
  
