@@ -4,7 +4,7 @@ class QualtricsIAT extends HTMLElement {
 		this.questionName = '';
 		this.iatId = '';
 		this.task = null;
-
+ 
 		this.currentState = 'init';
 		this.instructions = [
 			'<div>Put your middle or index fingers on the <b>E</b> and <b>I</b> keys of your keyboard. Words or images representing the categories at the top will appear one-by-one in the middle of the screen. When the item belongs to a category on the left, press the <b>E</b> key; when the item belongs to a category on the right, press the <b>I</b> key.  Items belong to only one category.  If you make an error, an <span style="color: red;">X</span> will appear - fix the error by hitting the other key.</div><br><div>This is a timed sorting task. <b>GO AS FAST AS YOU CAN</b> while making as few mistakes as possible. Going too slow or making too many errors will result in an uninterpretable score. This task will take about 5 minutes to complete.</div><br><div style="text-align:center">Press the <b>space bar</b> to begin.</div>',
@@ -18,24 +18,24 @@ class QualtricsIAT extends HTMLElement {
 		this.roundTypes = ['target','association','both','both','target','both','both'];
 		this.trialCount = [20, 20, 40, 40, 20, 40, 40];
 		this.rounds = [];
-
+ 
 		this.curRound = -1;
 		this.curTrial = -1;
-
+ 
 		this.score = 0;
-
+ 
 		this.question = null;
 		this.qualtrics = null;
-
+ 
 		// FIX: Track shuffled stimulus decks per category for sampling-without-replacement
 		this.stimulusDecks = {};
-
+ 
 		this.styleElement = document.createElement('style');
 		this.styleElement.textContent = `
 #instructions {
     width: 800px;
 }
-
+ 
 #experimentFrame {
     margin-left: auto;
     margin-right: auto;
@@ -43,22 +43,22 @@ class QualtricsIAT extends HTMLElement {
     height: 600px;
     border: solid black 1px;
 }
-
+ 
 #pictureFrame {
 	text-align: center;
 }
-
+ 
 #header {
 	height: 120px;
 }
-
+ 
 #leftCat {
 	font-size: 1.5em;
 	margin: 15px;
 	float: left;
 	max-width: 220px;
 }
-
+ 
 #rightCat {
 	font-size: 1.5em;
 	margin: 15px;
@@ -66,23 +66,23 @@ class QualtricsIAT extends HTMLElement {
 	max-width: 220px;
 	text-align: right;
 }
-
+ 
 #expInstruct {
     margin: 15px;
 }
-
+ 
 #underInstruct {
     margin-left: auto;
     margin-right: auto;
     margin-top: 10px;
     width: 600px;
 }
-
+ 
 .itemdiv {
 	margin-left: auto;
 	margin-right: auto;
 }
-
+ 
 #word {
 	width: 100px;
 	text-align: center;
@@ -99,15 +99,15 @@ class QualtricsIAT extends HTMLElement {
 }
 		`;
 		this.condStyle = document.createElement('style');
-
+ 
 		this.wrapper = document.createElement('div');
-
+ 
 		this.shadow = this.attachShadow({mode: 'open'});
 		this.shadow.appendChild(this.styleElement);
 		this.shadow.appendChild(this.condStyle);
 		this.shadow.appendChild(this.wrapper);
 	}
-
+ 
 	// FIX: Fisher-Yates shuffle utility
 	shuffle(array) {
 		const shuffled = [...array];
@@ -117,7 +117,7 @@ class QualtricsIAT extends HTMLElement {
 		}
 		return shuffled;
 	}
-
+ 
 	// FIX: Get next stimulus index for a category without repetition.
 	// Uses a shuffled deck; reshuffles when exhausted, ensuring the last
 	// item of the old deck isn't the first item of the new deck.
@@ -139,7 +139,7 @@ class QualtricsIAT extends HTMLElement {
 		}
 		return deck.indices[deck.position++];
 	}
-
+ 
 	connectedCallback() {
 		this.iatId = this.getAttribute('iat-id');
 		this.questionName = this.getAttribute('question-name');
@@ -148,12 +148,12 @@ class QualtricsIAT extends HTMLElement {
 		if (this.hasAttribute('show-result') && this.getAttribute('show-result') === 'true') {
 			this.showResult = true;
 		}
-
+ 
 		this.spinnerImage = document.createElement('img');
 		if (this.pathRoot) {
 			this.spinnerImage.src = this.pathRoot + 'images/iat/spinner.gif';
 		}
-
+ 
 		// FIX: If a task definition has been injected directly (self-contained mode),
 		// skip the server fetch entirely and proceed straight to setup.
 		if (this._injectedTask) {
@@ -161,10 +161,10 @@ class QualtricsIAT extends HTMLElement {
 			if (this.question) {
 				this.question.hideNextButton();
 			}
-			this.finishSetup();
+			const self = this; setTimeout(function() { self.finishSetup(); }, 0);
 			return;
 		}
-
+ 
 		const iatFetch = fetch(this.pathRoot + 'iat/taskDefinition-' + this.iatId + '.json', {method: 'GET', mode: 'cors'});
 		iatFetch.then((response) => {
 			const iatJSON = response.json();
@@ -178,16 +178,16 @@ class QualtricsIAT extends HTMLElement {
 					return;
 				}
 				this.task = task;
-
-				this.finishSetup();
+ 
+				const self = this; setTimeout(function() { self.finishSetup(); }, 0);
 			});
 		});
-
+ 
 		if (this.question) {
 			this.question.hideNextButton();
 		}
 	}
-
+ 
 	finishSetup() {
 		this.experimentFrame = document.createElement('div');
 		this.experimentFrame.id = 'experimentFrame';
@@ -198,16 +198,16 @@ class QualtricsIAT extends HTMLElement {
 		this.headerLeftCat = document.createElement('div');
 		this.headerLeftCat.id = 'leftCat';
 		this.header.appendChild(this.headerLeftCat);
-
+ 
 		this.headerRightCat = document.createElement('div');
 		this.headerRightCat.id = 'rightCat';
 		this.header.appendChild(this.headerRightCat);
-
+ 
 		this.experimentFrame.appendChild(this.header);
-
+ 
 		this.pictureFrame = document.createElement('div');
 		this.pictureFrame.id = 'pictureFrame';
-
+ 
 		this.expInstruct = document.createElement('div');
 		this.expInstruct.id = 'expInstruct';
 		this.expInstruct.style.textAlign = 'center';
@@ -216,36 +216,36 @@ class QualtricsIAT extends HTMLElement {
 		this.word = document.createElement('div');
 		this.word.id = 'word';
 		this.expInstruct.appendChild(this.word);
-
+ 
 		this.wrong = document.createElement('img');
 		this.wrong.id = 'wrong';
 		this.wrong.src = this.pathRoot + 'images/iat/Wrong.jpg';  // FIX: use pathRoot instead of hardcoded URL
 		this.pictureFrame.appendChild(this.wrong);
-
+ 
 		this.experimentFrame.appendChild(this.pictureFrame);
-
+ 
 		this.wrapper.appendChild(this.experimentFrame);
-
+ 
 		this.underInstruct = document.createElement('div');
 		this.underInstruct.id = 'underInstruct';
 		this.underInstruct.innerHTML = `If the <b>E</b> and <b>I</b> keys do not work, click the mouse inside the white box and try again.<br>
 	If the red <span style="color: red">X</span> appears, press the other key to make the red <span style="color: red">X</span> go away.`;
 		this.wrapper.appendChild(this.underInstruct);
-
+ 
 		this.errorDisplay = document.createElement('div');
 		this.errorDisplay.id = 'error';
 		this.errorDisplay.style.color = 'red';
 		this.wrapper.appendChild(this.errorDisplay);
-
+ 
 		this.successDisplay = document.createElement('div');
 		this.successDisplay.id = 'success';
 		this.successDisplay.style.color = 'green';
 		this.successDisplay.style.display = 'none';
 		this.wrapper.appendChild(this.successDisplay);
-
+ 
 		// NOTE: Stimulus padding removed. The shuffle-and-cycle approach handles
 		// pools of any size naturally — no need to equalize array lengths.
-
+ 
 		this.categoryImages = {};
 		for (const cat of Object.keys(this.task.categories)) {
 			const category = this.task.categories[cat];
@@ -258,24 +258,24 @@ class QualtricsIAT extends HTMLElement {
 				}
 			}
 		}
-
+ 
 		this.setupRounds();
-
+ 
 		this.startIAT();
 	}
-
+ 
 	setupRounds() {
 		// Reset stimulus decks for fresh shuffle-and-cycle
 		this.stimulusDecks = {};
-
+ 
 		for (let i = 0; i < this.roundTypes.length; i++) {
 			this.rounds[i] = [];
-
+ 
 			// FIX: Pre-build balanced category assignments, then shuffle.
 			// This ensures equal representation of each category within a round.
 			const categoryAssignments = [];
 			const trialCount = this.trialCount[i];
-
+ 
 			switch (this.roundTypes[i]) {
 				case 'target':
 					// Half A, half B
@@ -319,17 +319,17 @@ class QualtricsIAT extends HTMLElement {
 					}
 					break;
 			}
-
+ 
 			// For target and association rounds, shuffle the balanced assignments
 			if (this.roundTypes[i] !== 'both') {
 				const shuffled = this.shuffle(categoryAssignments);
 				categoryAssignments.length = 0;
 				categoryAssignments.push(...shuffled);
 			}
-
+ 
 			// Reset decks at the start of each round for clean cycling
 			this.stimulusDecks = {};
-
+ 
 			for (let j = 0; j < trialCount; j++) {
 				const round = {};
 				round.startTime = 0;
@@ -340,12 +340,12 @@ class QualtricsIAT extends HTMLElement {
 				round.catIndex = 0;
 				round.correct = 0;
 				round.errors = 0;
-
+ 
 				const catId = categoryAssignments[j];
 				round.catId = catId;
 				round.category = this.task.categories[catId].label;
 				round.itemType = this.task.categories[catId].type;
-
+ 
 				// Determine correct key based on round and category
 				switch (catId) {
 					case 'A':
@@ -361,26 +361,26 @@ class QualtricsIAT extends HTMLElement {
 						round.correct = 2;
 						break;
 				}
-
+ 
 				// FIX: Use shuffle-and-cycle instead of random-with-retry
 				round.catIndex = this.getNextStimulusIndex(catId);
-
+ 
 				this.rounds[i].push(round);
 			}
 		}
 	}
-
+ 
 	startIAT() {
 		this.curRound = 0;
 		this.curTrial = 0;
-
+ 
 		// Make the target or association words green
 		if (Math.random() < 0.5) {
 			this.condStyle.textContent = `.catA { color: green; }`;
 		} else {
 			this.condStyle.textContent = `.cat1 { color: green; }`;
 		}
-
+ 
 		const root = this;
 		// FIX: Use addEventListener instead of overwriting document.onkeyup
 		this._keyHandler = function(event) { root.processInput(event); };
@@ -388,7 +388,7 @@ class QualtricsIAT extends HTMLElement {
 		this.currentState = 'instruction';
 		this.instructionPage();
 	}
-
+ 
 	// Insert instruction text based on stage in IAT
 	instructionPage() {	
 		switch (this.curRound) {
@@ -438,21 +438,21 @@ class QualtricsIAT extends HTMLElement {
 			} else {
 				this.pictureFrame.innerHTML = "<div style='text-align:center;padding:20px'>Thanks for participating!</div>";
 			}
-
+ 
 			if (this.qualtrics) {
 				this.qualtrics.setJSEmbeddedData('IATResult', result);
 			}
 			if (this.question) {
 				this.question.showNextButton();
 			}
-
+ 
 			// FIX: Clean up event listener when done
 			document.removeEventListener('keyup', this._keyHandler);
 		} else {
 			this.expInstruct.innerHTML = this.instructions[this.curRound];
 		}
 	}
-
+ 
 	// Get the stimulus for this round & trial and display it
 	displayItem() {
 		const trial = this.rounds[this.curRound][this.curTrial];
@@ -473,7 +473,7 @@ class QualtricsIAT extends HTMLElement {
 			}
 		}
 	}
-
+ 
 	processInput(kEvent) {
 		const unicode = kEvent.keyCode ? kEvent.keyCode : kEvent.charCode;
 		if (this.currentState === 'instruction' && unicode === 32) {
@@ -509,7 +509,7 @@ class QualtricsIAT extends HTMLElement {
 			}
 		}
 	}
-
+ 
 	calculateIAT() {
 		// NOTE: This scoring formula was inherited from a previous version.
 		// It computes a t-like statistic on log-transformed RTs, which differs
@@ -518,9 +518,9 @@ class QualtricsIAT extends HTMLElement {
 		// where pooled_SD is computed over all trials in both critical blocks.
 		// Consider switching to the D-score for comparability with published research.
 		// The current formula is preserved here to maintain continuity with existing data.
-
+ 
 		const n = this.rounds[3].length - 1; // trials used (skipping first)
-
+ 
 		// Calculate mean log(RT) for compatible block (round 4)
 		let compatible = 0;
 		for (let i = 1; i < this.rounds[3].length; i++) {
@@ -556,7 +556,7 @@ class QualtricsIAT extends HTMLElement {
 		
 		return tvalue;
 	}
-
+ 
 	displayResult(tvalue) {
 		let severity = '';
 		if (Math.abs(tvalue) > 2.89) { 
@@ -589,7 +589,7 @@ class QualtricsIAT extends HTMLElement {
 		}
 		this.pictureFrame.innerHTML = resultText;
 	}
-
+ 
 	setQualtricsQuestion(question) {
 		this.question = question;
 	}
@@ -597,5 +597,6 @@ class QualtricsIAT extends HTMLElement {
 		this.qualtrics = engine;
 	}
 }
-
+ 
 customElements.define('qualtrics-iat', QualtricsIAT);
+ 
