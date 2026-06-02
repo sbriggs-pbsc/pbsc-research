@@ -463,7 +463,10 @@ class QualtricsIAT extends HTMLElement {
 		this.expInstruct.innerHTML = '';
 		if (trial.itemType === "img") {
 			this.expInstruct.appendChild(this.categoryImages[trial.catId][trial.catIndex]);
-		} else if (trial.itemType === "txt") {
+		} else {
+			// Any non-image stimulus renders as text. Using the default branch
+			// (instead of matching only "txt") tolerates "text" and other type-string
+			// typos in the task definition, which would otherwise blank the box.
 			this.word.textContent = this.task.categories[trial.catId].stimuli[trial.catIndex];
 			this.expInstruct.appendChild(this.word);
 			if (trial.catId === 'A' || trial.catId === 'B') {
